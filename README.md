@@ -23,10 +23,23 @@ Create `.env.local` from `.env.example` and set:
 
 ```bash
 GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODELS=gemini-3-flash-preview,gemini-3.1-flash-lite-preview,gemini-2.5-flash-lite,gemini-2.5-flash-preview-09-2025,gemini-2.5-flash-lite-preview-09-2025,gemini-2.0-flash,gemini-2.0-flash-lite
 ```
 
-`GEMINI_MODEL` is optional. The app defaults to `gemini-2.5-flash-lite`.
+`GEMINI_MODEL` is optional. The app now defaults to `gemini-2.5-flash` and automatically retries/falls back across multiple free-tier Gemini text models on transient backend failures like `503`.
+
+The bundled fallback chain is:
+
+- `gemini-3-flash-preview`
+- `gemini-3.1-flash-lite-preview`
+- `gemini-2.5-flash-lite`
+- `gemini-2.5-flash-preview-09-2025`
+- `gemini-2.5-flash-lite-preview-09-2025`
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-lite`
+
+The `2.0` models are included only as last-resort compatibility fallbacks and are deprecated upstream.
 
 ## Vercel deploy target
 
@@ -38,6 +51,7 @@ In Vercel, add:
 
 - `GEMINI_API_KEY`
 - `GEMINI_MODEL` (optional)
+- `GEMINI_FALLBACK_MODELS` (optional, comma-separated)
 
 ## Verification
 

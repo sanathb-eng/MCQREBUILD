@@ -4,9 +4,60 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const DEFAULT_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_FALLBACK_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash-preview-09-2025",
+  "gemini-2.5-flash-lite-preview-09-2025",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+];
 const ALLOWED_COUNTS = new Set([5, 10, 15]);
 const ALLOWED_DIFFICULTIES = new Set(["Easy", "Medium", "Hard"]);
+const RETRYABLE_STATUS_PATTERN = /\[(429|500|503)\b/i;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function isRetryableModelError(error) {
+  const message = getErrorMessage(error);
+
+  return (
+    RETRYABLE_STATUS_PATTERN.test(message) ||
+    message.includes("RESOURCE_EXHAUSTED") ||
+    message.includes("UNAVAILABLE") ||
+    message.includes("INTERNAL")
+  );
+}
+
+function parseModelList(value) {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getModelCandidates() {
+  const configuredPrimary = process.env.GEMINI_MODEL?.trim();
+  const configuredFallbacks = parseModelList(process.env.GEMINI_FALLBACK_MODELS);
+
+  return [...new Set([configuredPrimary || DEFAULT_MODEL, ...configuredFallbacks, ...DEFAULT_FALLBACK_MODELS])];
+}
 
 function extractJson(text) {
   const cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -58,6 +109,14 @@ function normalizeQuestions(rawQuestions = []) {
     });
 }
 
+async function generateQuestionsWithModel(client, modelName, prompt, count) {
+  const model = client.getGenerativeModel({ model: modelName });
+  const result = await model.generateContent(prompt);
+  const parsed = extractJson(result.response.text());
+
+  return normalizeQuestions(parsed.questions).slice(0, count);
+}
+
 export async function POST(request) {
   try {
     const { chunkData, config: requestedConfig } = await request.json();
@@ -75,7 +134,7 @@ export async function POST(request) {
     }
 
     const config = normalizeConfig(requestedConfig);
-    const modelName = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+    const modelCandidates = getModelCandidates();
 
     const prompt = `
 You are an expert Corporate Law II professor building a multiple-choice exam.
@@ -115,22 +174,56 @@ ${chunkData.content}
 `;
 
     const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({ model: modelName });
-    const result = await model.generateContent(prompt);
-    const parsed = extractJson(result.response.text());
-    const questions = normalizeQuestions(parsed.questions).slice(0, config.count);
+    const failedModels = [];
+    let questions = [];
+    let lastError = null;
 
-    if (questions.length === 0) {
-      throw new Error("No usable questions were returned by the model.");
+    for (const [index, modelName] of modelCandidates.entries()) {
+      const maxAttempts = index === 0 ? 2 : 1;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        try {
+          questions = await generateQuestionsWithModel(client, modelName, prompt, config.count);
+
+          if (questions.length === 0) {
+            throw new Error(`Model ${modelName} returned no usable questions.`);
+          }
+
+          return NextResponse.json({
+            questions,
+            model: modelName,
+            fallbackUsed: modelName !== modelCandidates[0],
+          });
+        } catch (error) {
+          lastError = error;
+
+          if (!failedModels.includes(modelName)) {
+            failedModels.push(modelName);
+          }
+
+          if (!isRetryableModelError(error) || attempt === maxAttempts - 1) {
+            break;
+          }
+
+          await sleep(800 * (attempt + 1));
+        }
+      }
     }
 
-    return NextResponse.json({ questions });
+    const attemptedModels = failedModels.join(", ");
+    const lastMessage = getErrorMessage(lastError);
+
+    throw new Error(
+      attemptedModels
+        ? `All configured Gemini models failed (${attemptedModels}). Last error: ${lastMessage}`
+        : lastMessage
+    );
   } catch (error) {
     console.error("MCQ generation failed:", error);
 
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unknown generation error.",
+        error: getErrorMessage(error) || "Unknown generation error.",
       },
       { status: 500 }
     );
