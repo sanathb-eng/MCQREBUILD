@@ -8,6 +8,27 @@ import { addResult } from "@/lib/history-store";
 const QUESTION_COUNTS = [5, 10, 15];
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 
+function formatGenerationError(message) {
+  const text = typeof message === "string" ? message : "Failed to generate questions.";
+  const normalized = text.toLowerCase();
+
+  if (normalized.includes("gemini_api_key")) {
+    return text;
+  }
+
+  if (
+    normalized.includes("503") ||
+    normalized.includes("resource_exhausted") ||
+    normalized.includes("unavailable") ||
+    normalized.includes("overloaded") ||
+    normalized.includes("all configured gemini models failed")
+  ) {
+    return "The free AI service is under heavy use right now. Because this app relies on a free AI Studio API key, generation speed depends on the time of day and live demand. Please wait a few minutes and try again.";
+  }
+
+  return text;
+}
+
 export default function TestSession({ chunkId, chunkData }) {
   const [stage, setStage] = useState("config");
   const [config, setConfig] = useState({ count: 5, difficulty: "Medium" });
@@ -58,9 +79,11 @@ export default function TestSession({ chunkId, chunkData }) {
       clearTimeout(timeoutId);
 
       if (requestError.name === "AbortError") {
-        setError("The generation request timed out after 90 seconds. Check your Vercel function logs and try again.");
+        setError(
+          "The request timed out after 90 seconds. On a free AI Studio key, this usually means the upstream API is congested or temporarily unavailable."
+        );
       } else {
-        setError(requestError.message);
+        setError(formatGenerationError(requestError.message));
       }
     } finally {
       setLoading(false);
@@ -98,15 +121,20 @@ export default function TestSession({ chunkId, chunkData }) {
         <section className="hero-card">
           <div className="eyebrow">{chunkData.topic}</div>
           <h1 style={{ maxWidth: "18ch", fontSize: "clamp(2rem, 4vw, 3.4rem)" }}>{chunkData.title}</h1>
-          <p className="hero-copy">This quiz is generated from the exact syllabus chunk already bundled into the app.</p>
+          <p className="hero-copy">
+            The mock paper for this topic is drafted only from the selected syllabus chunk already bundled into the app.
+          </p>
         </section>
       </div>
 
       {stage === "config" && (
         <section className="panel-card stack-md" style={{ maxWidth: "46rem" }}>
           <div className="stack-md" style={{ gap: "0.5rem" }}>
-            <h2>Quiz Setup</h2>
-            <p className="subtle-text">Choose the question count and difficulty, then generate a fresh mock test.</p>
+            <h2>Paper Setup</h2>
+            <p className="subtle-text">
+              Choose the paper length and difficulty, then request a fresh AI-generated set of questions for this exact
+              topic.
+            </p>
           </div>
 
           <div className="stack-md" style={{ gap: "0.75rem" }}>
@@ -141,21 +169,33 @@ export default function TestSession({ chunkId, chunkData }) {
             </div>
           </div>
 
+          <div className="message-info">
+            <strong style={{ display: "block", marginBottom: "0.35rem" }}>Before generating</strong>
+            This paper depends on a free Google AI Studio API key. At some times of day it works quickly, and at other
+            times it may slow down, fail, or not load because the upstream API is under heavy use.
+          </div>
+
           {error && <div className="message-error">{error}</div>}
 
           <button type="button" className="button-primary" onClick={generateQuestions} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 size={16} className="spinner" />
-                Generating questions...
+                Drafting questions...
               </>
             ) : (
               <>
                 <PlayCircle size={16} />
-                Start mock test
+                Generate mock paper
               </>
             )}
           </button>
+
+          {loading && (
+            <p className="subtle-text">
+              Free-tier AI generation can take noticeably longer during peak usage windows.
+            </p>
+          )}
         </section>
       )}
 
@@ -257,13 +297,18 @@ export default function TestSession({ chunkId, chunkData }) {
       {stage === "done" && (
         <section className="panel-card stack-md" style={{ maxWidth: "44rem" }}>
           <div className="eyebrow">Completed</div>
-          <h2>Test complete</h2>
+          <h2>Paper complete</h2>
           <p className="subtle-text">{chunkData.title}</p>
 
           <div className="metric-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
             <div className="metric-card">
               <div className="label">Score</div>
-              <div className="value" style={{ color: scorePercent >= 80 ? "#bbf7d0" : scorePercent >= 50 ? "#fde68a" : "#fecaca" }}>
+              <div
+                className="value"
+                style={{
+                  color: scorePercent >= 80 ? "var(--ok-ink)" : scorePercent >= 50 ? "var(--warn-ink)" : "var(--err-ink)",
+                }}
+              >
                 {scorePercent}%
               </div>
             </div>
@@ -279,10 +324,10 @@ export default function TestSession({ chunkId, chunkData }) {
 
           <div className={scorePercent >= 80 ? "message-success" : scorePercent >= 50 ? "message-info" : "message-error"}>
             {scorePercent >= 80
-              ? "Excellent work. This topic is in strong shape."
+              ? "Excellent work. This topic appears to be in strong shape."
               : scorePercent >= 50
-                ? "You are close. Another pass through this chunk should help lock it in."
-                : "This topic needs review before the next attempt."}
+                ? "You are close. Another careful pass through this chapter should help settle the details."
+                : "This chapter needs another round of review before the next attempt."}
           </div>
 
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -298,10 +343,10 @@ export default function TestSession({ chunkId, chunkData }) {
                 setError("");
               }}
             >
-              Retry topic
+              Generate another paper
             </button>
             <Link href="/review" className="button-primary">
-              Open review history
+              Open review archive
             </Link>
           </div>
         </section>

@@ -5,6 +5,15 @@ import { BarChart, Bar, CartesianGrid, Cell, Line, LineChart, ResponsiveContaine
 import { useHistory } from "@/lib/history-store";
 
 const SUBJECTS = ["IBC", "Competition Law", "FEMA & Foreign Investment", "Companies Act"];
+const CHART_GRID = "rgba(90, 31, 47, 0.12)";
+const CHART_AXIS = "rgba(88, 62, 58, 0.72)";
+const CHART_TOOLTIP_BG = "#fffaf3";
+const CHART_TOOLTIP_BORDER = "rgba(90, 31, 47, 0.18)";
+const TREND_STROKE = "#5a1f2f";
+const TREND_DOT = "#8b5563";
+const SUBJECT_OK = "#5f7c47";
+const SUBJECT_WARN = "#b07f47";
+const SUBJECT_ERR = "#9e5648";
 
 export default function AnalyticsPage() {
   const history = useHistory();
@@ -14,7 +23,7 @@ export default function AnalyticsPage() {
       <div className="container empty-state">
         <div className="panel-card stack-md">
           <h1>Analytics</h1>
-          <p className="subtle-text">Take your first generated test to start populating your performance charts.</p>
+          <p className="subtle-text">Take your first AI-generated paper to begin building your performance record.</p>
           <Link href="/" className="button-primary" style={{ alignSelf: "center" }}>
             Go to topic map
           </Link>
@@ -51,7 +60,7 @@ export default function AnalyticsPage() {
       <section className="stack-md">
         <div className="section-copy">
           <h1>Analytics</h1>
-          <p>Track performance across attempts, subjects, and mastered syllabus chunks.</p>
+          <p>Track results across attempts, subjects, and the chapters you appear to have mastered.</p>
         </div>
 
         <div className="metric-grid">
@@ -80,17 +89,17 @@ export default function AnalyticsPage() {
           <div style={{ height: "320px" }}>
             <ResponsiveContainer>
               <LineChart data={scoreTrend} margin={{ top: 10, right: 12, bottom: 10, left: -18 }}>
-                <CartesianGrid stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.45)" />
-                <YAxis domain={[0, 100]} stroke="rgba(255,255,255,0.45)" />
+                <CartesianGrid stroke={CHART_GRID} strokeDasharray="4 4" />
+                <XAxis dataKey="name" stroke={CHART_AXIS} />
+                <YAxis domain={[0, 100]} stroke={CHART_AXIS} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#091522",
-                    borderColor: "rgba(166, 188, 255, 0.14)",
+                    backgroundColor: CHART_TOOLTIP_BG,
+                    borderColor: CHART_TOOLTIP_BORDER,
                     borderRadius: 16,
                   }}
                 />
-                <Line type="monotone" dataKey="score" stroke="#5b7cff" strokeWidth={3} dot={{ r: 4, fill: "#9db4ff" }} />
+                <Line type="monotone" dataKey="score" stroke={TREND_STROKE} strokeWidth={3} dot={{ r: 4, fill: TREND_DOT }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -101,22 +110,19 @@ export default function AnalyticsPage() {
           <div style={{ height: "320px" }}>
             <ResponsiveContainer>
               <BarChart data={subjectPerformance} layout="vertical" margin={{ top: 10, right: 12, bottom: 10, left: 6 }}>
-                <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.06)" />
-                <XAxis type="number" domain={[0, 100]} stroke="rgba(255,255,255,0.45)" />
-                <YAxis type="category" dataKey="name" width={100} stroke="rgba(255,255,255,0.6)" />
+                <CartesianGrid horizontal={false} stroke={CHART_GRID} />
+                <XAxis type="number" domain={[0, 100]} stroke={CHART_AXIS} />
+                <YAxis type="category" dataKey="name" width={100} stroke={CHART_AXIS} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#091522",
-                    borderColor: "rgba(166, 188, 255, 0.14)",
+                    backgroundColor: CHART_TOOLTIP_BG,
+                    borderColor: CHART_TOOLTIP_BORDER,
                     borderRadius: 16,
                   }}
                 />
                 <Bar dataKey="score" radius={[0, 12, 12, 0]}>
                   {subjectPerformance.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={entry.score >= 80 ? "#22c55e" : entry.score >= 50 ? "#f59e0b" : "#f87171"}
-                    />
+                    <Cell key={entry.name} fill={entry.score >= 80 ? SUBJECT_OK : entry.score >= 50 ? SUBJECT_WARN : SUBJECT_ERR} />
                   ))}
                 </Bar>
               </BarChart>

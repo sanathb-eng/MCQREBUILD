@@ -41,8 +41,8 @@ export default function TopicMap({ groups }) {
               onClick={() => setActiveTopic(group.name)}
               style={{
                 textAlign: "left",
-                borderColor: isActive ? "rgba(112, 151, 255, 0.45)" : undefined,
-                background: isActive ? "rgba(91, 124, 255, 0.08)" : undefined,
+                borderColor: isActive ? "var(--brand-border-strong)" : undefined,
+                background: isActive ? "var(--brand-soft)" : undefined,
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", marginBottom: "0.9rem" }}>
@@ -91,8 +91,8 @@ export default function TopicMap({ groups }) {
                       minWidth: "2.2rem",
                       height: "2.2rem",
                       borderRadius: "999px",
-                      background: "rgba(91, 124, 255, 0.14)",
-                      color: "#dbe6ff",
+                      background: "var(--brand-soft)",
+                      color: "var(--brand)",
                       fontWeight: 800,
                     }}
                   >
@@ -124,7 +124,7 @@ export default function TopicMap({ groups }) {
 
                 <Link href={`/test/${chunk.id}`} className="button-primary">
                   <PlayCircle size={16} />
-                  {status.variant === "muted" ? "Start" : "Retry"}
+                  {status.variant === "muted" ? "Begin paper" : "Retake paper"}
                 </Link>
               </div>
             </article>

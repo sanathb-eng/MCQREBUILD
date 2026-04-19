@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, ChartColumn, BrainCircuit, History } from "lucide-react";
+import { BookOpen, ChartColumn, History, Scale } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Topic Map", icon: BookOpen },
@@ -18,7 +18,7 @@ export default function Navbar() {
       <div className="container navbar-inner">
         <Link href="/" className="brand">
           <span className="brand-mark">
-            <BrainCircuit size={18} />
+            <Scale size={18} />
           </span>
           <span className="brand-name">CorpLaw Master</span>
         </Link>

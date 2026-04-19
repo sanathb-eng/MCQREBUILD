@@ -1,3 +1,4 @@
+import AIDisclaimer from "@/components/AIDisclaimer";
 import TopicMap from "@/components/TopicMap";
 import { topicGroups } from "@/lib/course-data";
 
@@ -5,18 +6,20 @@ export default function Home() {
   return (
     <div className="container stack-lg">
       <section className="hero-card">
-        <div className="eyebrow">Corporate Law II</div>
-        <h1>Choose a topic and spin up a mock test in seconds.</h1>
+        <div className="eyebrow">Corporate Law II Revision</div>
+        <h1>An elegant, chapter-by-chapter way to rehearse the syllabus.</h1>
         <p className="hero-copy">
-          This rebuild is structured for Vercel deployment: static course data is bundled into the app, topic routes are
-          precomputed, and the quiz page renders from server-provided data instead of brittle client-side fetches.
+          Select a syllabus chunk, generate an AI-drafted multiple-choice paper from that exact material, and keep a
+          running archive of your attempts, explanations, and performance trends.
         </p>
       </section>
 
+      <AIDisclaimer />
+
       <section className="stack-md">
         <div className="section-copy">
-          <h2>Topic Map</h2>
-          <p>Pick a syllabus chunk, see your progress, and launch a generated MCQ set for that exact section.</p>
+          <h2>Syllabus Index</h2>
+          <p>Choose a chapter, review your progress, and open a paper tied to one precise part of the course.</p>
         </div>
         <TopicMap groups={topicGroups} />
       </section>

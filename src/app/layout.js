@@ -1,4 +1,5 @@
 import "./globals.css";
+import AIDisclaimer from "@/components/AIDisclaimer";
 import Navbar from "@/components/Navbar";
 
 export const metadata = {
@@ -11,6 +12,11 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <Navbar />
+        <div className="site-notice-shell">
+          <div className="container">
+            <AIDisclaimer compact />
+          </div>
+        </div>
         <main className="page-shell">{children}</main>
       </body>
     </html>
