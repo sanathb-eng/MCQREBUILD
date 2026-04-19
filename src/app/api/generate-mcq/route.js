@@ -17,6 +17,34 @@ const DEFAULT_FALLBACK_MODELS = [
 const ALLOWED_COUNTS = new Set([5, 10, 15]);
 const ALLOWED_DIFFICULTIES = new Set(["Easy", "Medium", "Hard"]);
 const RETRYABLE_STATUS_PATTERN = /\[(429|500|503)\b/i;
+const QUESTION_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          text: { type: "string" },
+          options: {
+            type: "object",
+            properties: {
+              A: { type: "string" },
+              B: { type: "string" },
+              C: { type: "string" },
+              D: { type: "string" },
+            },
+            required: ["A", "B", "C", "D"],
+          },
+          correctAnswer: { type: "string" },
+          explanation: { type: "string" },
+        },
+        required: ["text", "options", "correctAnswer", "explanation"],
+      },
+    },
+  },
+  required: ["questions"],
+};
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -110,7 +138,13 @@ function normalizeQuestions(rawQuestions = []) {
 }
 
 async function generateQuestionsWithModel(client, modelName, prompt, count) {
-  const model = client.getGenerativeModel({ model: modelName });
+  const model = client.getGenerativeModel({
+    model: modelName,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: QUESTION_RESPONSE_SCHEMA,
+    },
+  });
   const result = await model.generateContent(prompt);
   const parsed = extractJson(result.response.text());
 

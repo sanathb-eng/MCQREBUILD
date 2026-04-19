@@ -17,8 +17,8 @@ export async function generateMetadata({ params }) {
   }
 
   return {
-    title: `${chunkData.title} | CorpLaw Master`,
-    description: `Generated mock test for ${chunkData.title}.`,
+    title: `${chunkData.title} | PROBLEM7`,
+    description: `Question set for ${chunkData.title}.`,
   };
 }
 

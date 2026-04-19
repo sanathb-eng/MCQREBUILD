@@ -4,7 +4,7 @@ const noticeItems = [
   {
     icon: Sparkles,
     title: "AI-generated study aid",
-    body: "Each mock paper is drafted by AI from the selected syllabus chunk. It can be helpful, but it can also be imperfect, incomplete, or unavailable.",
+    body: "Each question set is drafted by AI from the selected syllabus chunk. It can be helpful, but it can also be imperfect, incomplete, or unavailable.",
   },
   {
     icon: Clock3,
@@ -27,8 +27,9 @@ export default function AIDisclaimer({ compact = false }) {
             <AlertTriangle size={17} />
           </span>
           <p>
-            AI-generated tests use a free Google AI Studio API. Availability depends on time of day and live demand, so
-            slow loading or failed generation usually means the upstream service is temporarily under heavy use.
+            AI-generated question sets use a free Google AI Studio API. Availability depends on time of day and live
+            demand, so slow loading or failed generation usually means the upstream service is temporarily under heavy
+            use.
           </p>
         </div>
       </section>
@@ -41,8 +42,8 @@ export default function AIDisclaimer({ compact = false }) {
         <div className="eyebrow">AI Generation Notice</div>
         <h2>Important before you begin</h2>
         <p>
-          These mock examinations are intended as a revision aid. They are not guaranteed to be flawless, and they are
-          not guaranteed to be available at every moment.
+          These AI-generated question sets are revision aids. They are not guaranteed to be flawless, and they are not
+          guaranteed to be available at every moment.
         </p>
       </div>
 

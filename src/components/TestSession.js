@@ -1,12 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Loader2, PlayCircle, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, Loader2, PlayCircle, XCircle } from "lucide-react";
 import { addResult } from "@/lib/history-store";
 
 const QUESTION_COUNTS = [5, 10, 15];
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
+
+function formatElapsedTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = Math.floor(totalSeconds % 60)
+    .toString()
+    .padStart(2, "0");
+
+  return `${minutes}:${seconds}`;
+}
+
+function tryParseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
 
 function formatGenerationError(message) {
   const text = typeof message === "string" ? message : "Failed to generate questions.";
@@ -21,7 +40,10 @@ function formatGenerationError(message) {
     normalized.includes("resource_exhausted") ||
     normalized.includes("unavailable") ||
     normalized.includes("overloaded") ||
-    normalized.includes("all configured gemini models failed")
+    normalized.includes("all configured gemini models failed") ||
+    normalized.includes("not valid json") ||
+    normalized.includes("unexpected token") ||
+    normalized.includes("an error occurred")
   ) {
     return "The free AI service is under heavy use right now. Because this app relies on a free AI Studio API key, generation speed depends on the time of day and live demand. Please wait a few minutes and try again.";
   }
@@ -38,12 +60,30 @@ export default function TestSession({ chunkId, chunkData }) {
   const [revealed, setRevealed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [quizStartedAt, setQuizStartedAt] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [completedElapsedSeconds, setCompletedElapsedSeconds] = useState(0);
 
   const currentQuestion = questions[currentIndex];
   const correctCount = questions.reduce((total, question, index) => {
     return total + (answers[index] === question.correctAnswer ? 1 : 0);
   }, 0);
   const scorePercent = questions.length === 0 ? 0 : Math.round((correctCount / questions.length) * 100);
+
+  useEffect(() => {
+    if (stage !== "quiz" || !quizStartedAt) {
+      return undefined;
+    }
+
+    const updateElapsed = () => {
+      setElapsedSeconds(Math.floor((Date.now() - quizStartedAt) / 1000));
+    };
+
+    updateElapsed();
+    const intervalId = setInterval(updateElapsed, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [stage, quizStartedAt]);
 
   async function generateQuestions() {
     setLoading(true);
@@ -64,16 +104,26 @@ export default function TestSession({ chunkId, chunkData }) {
       });
 
       clearTimeout(timeoutId);
-      const payload = await response.json();
+      const rawText = await response.text();
+      const payload = tryParseJson(rawText);
 
       if (!response.ok) {
-        throw new Error(payload.error || "Failed to generate questions");
+        throw new Error(formatGenerationError(payload?.error || rawText || "Failed to generate questions"));
+      }
+
+      if (!payload || !Array.isArray(payload.questions)) {
+        throw new Error(
+          "The server did not return a valid question set. This usually means the AI provider failed before sending structured output."
+        );
       }
 
       setQuestions(payload.questions);
       setAnswers({});
       setCurrentIndex(0);
       setRevealed(false);
+      setElapsedSeconds(0);
+      setCompletedElapsedSeconds(0);
+      setQuizStartedAt(Date.now());
       setStage("quiz");
     } catch (requestError) {
       clearTimeout(timeoutId);
@@ -99,6 +149,7 @@ export default function TestSession({ chunkId, chunkData }) {
       correctCount,
       totalCount: questions.length,
       difficulty: config.difficulty,
+      elapsedSeconds,
       questions: questions.map((question, index) => ({
         text: question.text,
         userAnswer: answers[index],
@@ -107,6 +158,7 @@ export default function TestSession({ chunkId, chunkData }) {
       })),
     });
 
+    setCompletedElapsedSeconds(elapsedSeconds);
     setStage("done");
   }
 
@@ -122,7 +174,7 @@ export default function TestSession({ chunkId, chunkData }) {
           <div className="eyebrow">{chunkData.topic}</div>
           <h1 style={{ maxWidth: "18ch", fontSize: "clamp(2rem, 4vw, 3.4rem)" }}>{chunkData.title}</h1>
           <p className="hero-copy">
-            The mock paper for this topic is drafted only from the selected syllabus chunk already bundled into the app.
+            The question set for this topic is drafted only from the selected syllabus chunk already bundled into the app.
           </p>
         </section>
       </div>
@@ -130,10 +182,9 @@ export default function TestSession({ chunkId, chunkData }) {
       {stage === "config" && (
         <section className="panel-card stack-md" style={{ maxWidth: "46rem" }}>
           <div className="stack-md" style={{ gap: "0.5rem" }}>
-            <h2>Paper Setup</h2>
+            <h2>Question Set Setup</h2>
             <p className="subtle-text">
-              Choose the paper length and difficulty, then request a fresh AI-generated set of questions for this exact
-              topic.
+              Choose the set length and difficulty, then request a fresh AI-generated batch of questions for this exact topic.
             </p>
           </div>
 
@@ -171,8 +222,8 @@ export default function TestSession({ chunkId, chunkData }) {
 
           <div className="message-info">
             <strong style={{ display: "block", marginBottom: "0.35rem" }}>Before generating</strong>
-            This paper depends on a free Google AI Studio API key. At some times of day it works quickly, and at other
-            times it may slow down, fail, or not load because the upstream API is under heavy use.
+            This question set depends on a free Google AI Studio API key. At some times of day it works quickly, and at
+            other times it may slow down, fail, or not load because the upstream API is under heavy use.
           </div>
 
           {error && <div className="message-error">{error}</div>}
@@ -186,7 +237,7 @@ export default function TestSession({ chunkId, chunkData }) {
             ) : (
               <>
                 <PlayCircle size={16} />
-                Generate mock paper
+                Generate question set
               </>
             )}
           </button>
@@ -209,11 +260,17 @@ export default function TestSession({ chunkId, chunkData }) {
                 </div>
                 <h2>{chunkData.title}</h2>
               </div>
-              <div className="status-chip muted">{config.difficulty}</div>
+              <div className="quiz-meta">
+                <div className="status-chip muted">{config.difficulty}</div>
+                <div className="timer-chip">
+                  <Clock3 size={15} />
+                  <span>Reference clock {formatElapsedTime(elapsedSeconds)}</span>
+                </div>
+              </div>
             </div>
 
             <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${(currentIndex / questions.length) * 100}%` }} />
+              <div className="progress-fill" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
             </div>
 
             <div className="stack-md" style={{ gap: "1rem" }}>
@@ -297,10 +354,10 @@ export default function TestSession({ chunkId, chunkData }) {
       {stage === "done" && (
         <section className="panel-card stack-md" style={{ maxWidth: "44rem" }}>
           <div className="eyebrow">Completed</div>
-          <h2>Paper complete</h2>
+          <h2>Question set complete</h2>
           <p className="subtle-text">{chunkData.title}</p>
 
-          <div className="metric-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+          <div className="metric-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
             <div className="metric-card">
               <div className="label">Score</div>
               <div
@@ -319,6 +376,10 @@ export default function TestSession({ chunkId, chunkData }) {
             <div className="metric-card">
               <div className="label">Questions</div>
               <div className="value">{questions.length}</div>
+            </div>
+            <div className="metric-card">
+              <div className="label">Time</div>
+              <div className="value">{formatElapsedTime(completedElapsedSeconds)}</div>
             </div>
           </div>
 
@@ -341,9 +402,12 @@ export default function TestSession({ chunkId, chunkData }) {
                 setCurrentIndex(0);
                 setRevealed(false);
                 setError("");
+                setQuizStartedAt(null);
+                setElapsedSeconds(0);
+                setCompletedElapsedSeconds(0);
               }}
             >
-              Generate another paper
+              Generate another set
             </button>
             <Link href="/review" className="button-primary">
               Open review archive

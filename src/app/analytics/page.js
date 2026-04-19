@@ -5,15 +5,15 @@ import { BarChart, Bar, CartesianGrid, Cell, Line, LineChart, ResponsiveContaine
 import { useHistory } from "@/lib/history-store";
 
 const SUBJECTS = ["IBC", "Competition Law", "FEMA & Foreign Investment", "Companies Act"];
-const CHART_GRID = "rgba(90, 31, 47, 0.12)";
-const CHART_AXIS = "rgba(88, 62, 58, 0.72)";
-const CHART_TOOLTIP_BG = "#fffaf3";
-const CHART_TOOLTIP_BORDER = "rgba(90, 31, 47, 0.18)";
-const TREND_STROKE = "#5a1f2f";
-const TREND_DOT = "#8b5563";
-const SUBJECT_OK = "#5f7c47";
-const SUBJECT_WARN = "#b07f47";
-const SUBJECT_ERR = "#9e5648";
+const CHART_GRID = "rgba(123, 73, 86, 0.16)";
+const CHART_AXIS = "rgba(67, 49, 46, 0.72)";
+const CHART_TOOLTIP_BG = "#f3eadc";
+const CHART_TOOLTIP_BORDER = "rgba(123, 73, 86, 0.22)";
+const TREND_STROKE = "#7b4956";
+const TREND_DOT = "#9f6a78";
+const SUBJECT_OK = "#7b4956";
+const SUBJECT_WARN = "#a77b86";
+const SUBJECT_ERR = "#c5a9af";
 
 export default function AnalyticsPage() {
   const history = useHistory();
@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       <div className="container empty-state">
         <div className="panel-card stack-md">
           <h1>Analytics</h1>
-          <p className="subtle-text">Take your first AI-generated paper to begin building your performance record.</p>
+          <p className="subtle-text">Take your first AI-generated question set to begin building your performance record.</p>
           <Link href="/" className="button-primary" style={{ alignSelf: "center" }}>
             Go to topic map
           </Link>

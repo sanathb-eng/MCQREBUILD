@@ -3,8 +3,8 @@ import AIDisclaimer from "@/components/AIDisclaimer";
 import Navbar from "@/components/Navbar";
 
 export const metadata = {
-  title: "CorpLaw Master",
-  description: "Corporate Law II mock tests, analytics, and answer review.",
+  title: "PROBLEM7",
+  description: "Question sets, analytics, and review for Corporate Law II.",
 };
 
 export default function RootLayout({ children }) {

@@ -26,9 +26,9 @@ export default function ReviewPage() {
       <div className="container empty-state">
         <div className="panel-card stack-md">
           <h1>Review</h1>
-          <p className="subtle-text">Your saved explanations and answer history will appear here after you complete a paper.</p>
+          <p className="subtle-text">Your saved explanations and answer history will appear here after you complete a question set.</p>
           <Link href="/" className="button-primary" style={{ alignSelf: "center" }}>
-            Begin a paper
+            Begin a question set
           </Link>
         </div>
       </div>
@@ -39,7 +39,7 @@ export default function ReviewPage() {
     <div className="container stack-lg">
       <section className="section-copy">
         <h1>Review</h1>
-        <p>Open any saved paper to inspect your answer, the correct option, and the explanation in full.</p>
+        <p>Open any saved question set to inspect your answer, the correct option, and the explanation in full.</p>
       </section>
 
       <section className="stack-md">

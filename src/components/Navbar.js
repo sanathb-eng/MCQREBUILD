@@ -20,7 +20,7 @@ export default function Navbar() {
           <span className="brand-mark">
             <Scale size={18} />
           </span>
-          <span className="brand-name">CorpLaw Master</span>
+          <span className="brand-name">PROBLEM7</span>
         </Link>
 
         <nav className="nav-links" aria-label="Primary navigation">
